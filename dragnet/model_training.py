@@ -145,7 +145,7 @@ def train_many_models(extractor, param_grid, data_dir, output_dir=None,
         **kwargs:
             scoring (str or Callable): default 'f1'
             cv (int): default 5
-            n_jobs (int): default 1
+            n_jobs (int): default -1
             verbose (int): default 1
 
     Returns:
@@ -164,6 +164,7 @@ def train_many_models(extractor, param_grid, data_dir, output_dir=None,
     data = prepare_all_data(data_dir)
     training_data, test_data = train_test_split(
         data, test_size=0.2, random_state=42)
+    logging.info('extracting label weights...')
     train_html, train_labels, train_weights = extractor.get_html_labels_weights(training_data)
     test_html, test_labels, test_weights = extractor.get_html_labels_weights(test_data)
 
@@ -183,10 +184,11 @@ def train_many_models(extractor, param_grid, data_dir, output_dir=None,
                                     for blocks in train_blocks])
 
     # fit many models
+    logging.info('grid search with parameters...')
     gscv = GridSearchCV(
         extractor.model, param_grid, fit_params={'sample_weight': train_weights},
         scoring=kwargs.get('scoring', 'f1'), cv=kwargs.get('cv', 5),
-        n_jobs=kwargs.get('n_jobs', 1), verbose=kwargs.get('verbose', 1))
+        n_jobs=kwargs.get('n_jobs', -1), verbose=kwargs.get('verbose', 1))
     gscv = gscv.fit(train_features, train_labels)
 
     logging.info('Score of the best model, on left-out data: %s', gscv.best_score_)
@@ -198,6 +200,9 @@ def train_many_models(extractor, param_grid, data_dir, output_dir=None,
         train_labels, extractor.predict(train_html[train_mask]), weights=train_weights)
     test_eval = evaluate_model_predictions(
         test_labels, extractor.predict(test_html), weights=test_weights)
+
+    # report model performance
+    _report_model_performance(output_dir, fname_prefix, train_eval, test_eval)
 
     # pickle the final model
     _write_model_to_disk(output_dir, fname_prefix, extractor)
