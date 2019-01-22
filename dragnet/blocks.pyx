@@ -839,14 +839,19 @@ class Blockifier(object):
             List[Block]: ordered sequence of blocks with text content
         """
         # First, we need to parse the thing
-        s = bytes_cast(s) # ensure we're working w/ bytes
-        encoding = encoding or guess_encoding(s, default='utf-8')
-        try:
-            html = etree.fromstring(s,
-                etree.HTMLParser(recover=True, encoding=encoding,
-                remove_comments=True, remove_pis=True))
-        except:
-            raise BlockifyError, 'Could not blockify HTML'
+        # If we get a pre-parsed tree, use that
+        if isinstance(s, etree._Element):
+            html = s
+        else:
+            # Got bytes or str, parse it
+            s = bytes_cast(s)  # ensure we're working w/ bytes
+            encoding = encoding or guess_encoding(s, default='utf-8')
+            try:
+                html = etree.fromstring(s,
+                    etree.HTMLParser(recover=True, encoding=encoding,
+                    remove_comments=True, remove_pis=True))
+            except Exception:
+                raise BlockifyError('Could not blockify HTML')
         if html is None:
             # lxml sometimes doesn't raise an error but returns None
             raise BlockifyError, 'Could not blockify HTML'
