@@ -3,6 +3,8 @@ import logging
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import ExtraTreesClassifier
+from lxml import etree
+
 
 from .compat import string_, str_cast, unicode_
 from .util import get_and_union_features
@@ -185,7 +187,7 @@ class Extractor(BaseEstimator, ClassifierMixin):
             ``np.ndarray`` or List[``np.ndarray``]: array of binary predictions
                 for content (1) or not-content (0).
         """
-        if isinstance(documents, (str, bytes, unicode_, np.unicode_)):
+        if isinstance(documents, (str, bytes, unicode_, np.unicode_, etree._Element)):
             return self._predict_one(documents, **kwargs)
         else:
             return np.concatenate([self._predict_one(doc, **kwargs) for doc in documents])

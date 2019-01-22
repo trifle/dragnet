@@ -818,6 +818,21 @@ class Blockifier(object):
         return results
 
     @staticmethod
+    def parse_tree(s, encoding=None):
+        if isinstance(s, etree._Element):
+            return s
+        else:
+            # Got bytes or str, parse it
+            s = bytes_cast(s)  # ensure we're working w/ bytes
+            encoding = encoding or guess_encoding(s, default='utf-8')
+            try:
+                return etree.fromstring(s,
+                    etree.HTMLParser(recover=True, encoding=encoding,
+                    remove_comments=True, remove_pis=True))
+            except Exception:
+                raise BlockifyError('Could not blockify HTML')
+
+    @staticmethod
     def blockify(s, encoding=None,
                  pb=PartialBlock, do_css=True, do_readability=False,
                  parse_callback=None):
@@ -838,20 +853,7 @@ class Blockifier(object):
         Returns:
             List[Block]: ordered sequence of blocks with text content
         """
-        # First, we need to parse the thing
-        # If we get a pre-parsed tree, use that
-        if isinstance(s, etree._Element):
-            html = s
-        else:
-            # Got bytes or str, parse it
-            s = bytes_cast(s)  # ensure we're working w/ bytes
-            encoding = encoding or guess_encoding(s, default='utf-8')
-            try:
-                html = etree.fromstring(s,
-                    etree.HTMLParser(recover=True, encoding=encoding,
-                    remove_comments=True, remove_pis=True))
-            except Exception:
-                raise BlockifyError('Could not blockify HTML')
+        html = Blockifier.parse_tree(s, encoding)
         if html is None:
             # lxml sometimes doesn't raise an error but returns None
             raise BlockifyError, 'Could not blockify HTML'
@@ -862,7 +864,8 @@ class Blockifier(object):
             parse_callback(html)
 
         # only return blocks with some text content
-        return [ele for ele in str_block_list_cast(blocks) if RE_TEXT.search(ele.text)]
+        # return [ele for ele in str_block_list_cast(blocks) if RE_TEXT.search(ele.text)]
+        return [ele for ele in blocks if RE_TEXT.search(ele.text.decode())]
 
 
 class TagCountBlockifier(Blockifier):
