@@ -377,7 +377,7 @@ def prepare_data(data_dir, fileroot, block_pct_tokens_thresh=0.1):
     return (html, parsed_content_blocks, parsed_comments_blocks)
 
 
-def prepare_all_data(data_dir, block_pct_tokens_thresh=0.1):
+def prepare_all_data(data_dir, block_pct_tokens_thresh=0.1, nprocesses=None):
     """
     Prepare data for all HTML + gold standard blocks examples in ``data_dir``.
 
@@ -397,7 +397,12 @@ def prepare_all_data(data_dir, block_pct_tokens_thresh=0.1):
     gs_blocks_fileroots = (
         re.search(r'(.+)' + re.escape(GOLD_STANDARD_BLOCKS_EXT), gs_blocks_filename).group(1)
         for gs_blocks_filename in gs_blocks_filenames)
-
-    return [prepare_data(data_dir, fileroot, block_pct_tokens_thresh)
+    if nprocesses == 1:
+        return [prepare_data(data_dir, fileroot, block_pct_tokens_thresh)
             for fileroot in gs_blocks_fileroots]
+    with multiprocessing.Pool() as P:
+        params = [(data_dir, fileroot, block_pct_tokens_thresh) for fileroot in gs_blocks_fileroots]
+        return P.starmap(prepare_data, params)
+
+
 
