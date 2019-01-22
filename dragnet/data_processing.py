@@ -26,7 +26,7 @@ GOLD_STANDARD_BLOCKS_EXT = '.block_corrected.txt'
 RE_COMMENTS_DELIM = re.compile(r'\n*!@#\$%\^&\*\(\)\s+COMMENTS\n*')
 
 
-def extract_all_gold_standard_data(data_dir, nprocesses=1,
+def extract_all_gold_standard_data(data_dir, nprocesses=None,
                                    overwrite=False, **kwargs):
     """
     Extract the gold standard block-level content and comment percentages from a
@@ -46,9 +46,9 @@ def extract_all_gold_standard_data(data_dir, nprocesses=1,
     See Also:
         :func:`extract_gold_standard_blocks`
     """
-    use_pool = nprocesses > 1
+    use_pool = nprocesses is not 1
     if use_pool:
-        pool = multiprocessing.Pool(processes=nprocesses)
+        pool = multiprocessing.Pool()
 
     # get the set of files that have already been block corrected
     # so that we don't block correct them again
